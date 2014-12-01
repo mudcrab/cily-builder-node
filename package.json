@@ -1,0 +1,37 @@
+{
+  "name": "cily-builder-node",
+  "version": "0.0.1",
+  "description": "cily builder",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:mudcrab/cily-builder-node.git"
+  },
+  "author": "Jevgeni Krasnosjolov",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mudcrab/cily-builder-node/issues"
+  },
+  "homepage": "https://github.com/mudcrab/cily-builder-node",
+  "dependencies": {
+    "app-root-path": "^1.0.0",
+    "bluebird": "^2.3.11",
+    "bookshelf": "^0.7.9",
+    "knex": "^0.7.3",
+    "lodash": "^2.4.1",
+    "minivents": "^1.1.6",
+    "moment-timezone": "^0.2.4",
+    "mysql": "^2.5.3",
+    "nodegit": "^0.2.3",
+    "ws": "^0.4.32"
+  },
+  "devDependencies": {
+    "gulp": "^3.8.10",
+    "gulp-jshint": "^1.9.0",
+    "gulp-watch": "^1.1.0",
+    "jshint-stylish": "^1.0.0"
+  }
+}
