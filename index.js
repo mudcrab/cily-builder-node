@@ -51,7 +51,7 @@ Builder.prototype.build = function(project, task, build)
 	this.projectName = project.name;
 	this.buildNr = build.build_nr;
 
-	var repoLocation = './builds/' + project.name + '/' + build.build_nr;
+	var repoLocation = helpers.config.builds + project.name + '/' + build.build_nr;
 
 	clone(project.repo_address, repoLocation, null)
 	.then(function(repo) {
@@ -99,10 +99,18 @@ Builder.prototype.runCommands = function(path, commands)
 Builder.prototype.saveLog = function(msg)
 {
 	var self = this;
-	var logsLocation = './logs/' + this.projectName;
-	helper.mkdirpSync(logsLocation);
+	var logsLocation = helpers.config.logs + this.projectName;
 
-	fs.appendFile(logsLocation + '/' + this.buildNr + '.log', msg, function (err) {
+	try
+	{
+		fs.mkdirSync(logsLocation);
+	}
+	catch(e)
+	{
+		console.log(e);
+	}
+
+	fs.appendFile(helpers.config.logs + this.projectName + '/' + this.buildNr + '.log', msg, function (err) {
 		// log error
 	});
 };

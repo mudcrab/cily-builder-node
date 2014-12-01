@@ -1,30 +1,19 @@
+var homeDir = process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE;
+homeDir += '/.cily';
 var fs = require('fs');
 var path = require('path');
-var config = require('./config');
+var config = getConfig();
 
-exports.mkdirpSync = function (dirpath) 
+function getConfig()
 {
-	var parts = dirpath.split(path.sep);
-
-	for( var i = 1; i <= parts.length; i++ )
+	try
 	{
-		try
-		{
-			fs.mkdirSync( path.join.apply(null, parts.slice(0, i)) );
-		}
-		catch(e)
-		{
-			// 
-		}
+		return require(homeDir + '/cily');
 	}
-};
-
-exports.getBuilder = function()
-{
-	for(var i = 0; i < config.builders.length; i++)
+	catch(e)
 	{
-		if(config.builders[i].status === 'available')
-			return config.builders[i];
+		console.log('Config file at %s/cily.js not found, using the default.', homeDir);
+		return require('./config');
 	}
 };
 
@@ -35,3 +24,7 @@ exports.socketData = function(type, data)
 		data: data || {}
 	});
 };
+
+exports.getConfig = getConfig;
+exports.config = config;
+exports.appDir = homeDir;
