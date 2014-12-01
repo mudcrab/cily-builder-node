@@ -1,5 +1,4 @@
 var WebSocket = require('ws');
-var ws = new WebSocket('ws://localhost:1337');
 var helpers = require('./helpers');
 var db = require('./db.js');
 var appRoot = require('app-root-path');
@@ -8,20 +7,26 @@ var Moment = require('moment-timezone');
 var exec = require('child_process').exec;
 var fs = require('fs');
 var clone = require('nodegit').Clone.clone;
+var ws;
 
 var Builder = function()
 {
 	this.status = 'available';
+	this.timeout = 0;
+	this.socketConnected = false;
+	this.ws = null;
 	this.initSocket();
-	console.log('Builder online');
 };
 
 Builder.prototype.initSocket = function()
 {
 	var self = this;
+	ws = new WebSocket('ws://localhost:1337');
 
 	ws.on('open', function() {
-		ws.send(helpers.socketData('addBuilder', null));
+		ws.send(helpers.socketData('addBuilder', { token: helpers.config.token } ));
+		self.socketConnected = true;
+		console.log('Connected to server');
 	});
 
 	ws.on('message', function(data) {
@@ -42,6 +47,34 @@ Builder.prototype.initSocket = function()
 			break;
 		}
 	});
+
+	ws.on('close', function() {
+		console.log('Connection closed');
+		self.socketConnected = false;
+
+		if(self.timeout == 0)
+		{
+			self.retryConnection();
+		}
+	});
+};
+
+Builder.prototype.retryConnection = function()
+{
+	var self = this;
+
+	this.timeout = setInterval(function() {
+		if(!self.socketConnected)
+		{
+			self.initSocket();
+			console.log('Retrying...');
+		}
+		else
+		{
+			clearInterval(self.timeout);
+			self.timeout = 0;
+		}
+	}, 2000);
 };
 
 Builder.prototype.build = function(project, task, build)
