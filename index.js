@@ -96,12 +96,16 @@ Builder.prototype.build = function(project, task, build)
 			var retData = {
 				status: buildStatus,
 				end_time: Moment.tz("Europe/Tallinn").format("YYYY-MM-DD HH:MM:ss"),
-				commit: commit.sha()
+				hash: commit.sha(),
+				msg: commit.message(),
+				author: commit.author(),
+				committer: commit.committer()
 			};
 			ws.send(helpers.socketData('buildComplete', retData));
 		});
 	})
 	.catch(function(err) {
+		console.log(err);
 		ws.send(helpers.socketData('vcsError', null));
 	});
 };
