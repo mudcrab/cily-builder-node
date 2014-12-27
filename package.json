@@ -25,7 +25,6 @@
     "minivents": "^1.1.6",
     "moment-timezone": "^0.2.4",
     "mysql": "^2.5.3",
-    "nodegit": "^0.2.3",
     "ws": "^0.4.32"
   },
   "devDependencies": {

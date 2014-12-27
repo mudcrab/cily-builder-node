@@ -6,7 +6,7 @@ var Promise_ = require('bluebird');
 var Moment = require('moment-timezone');
 var exec = require('child_process').exec;
 var fs = require('fs');
-var clone = require('nodegit').Clone.clone;
+var scm = require('./lib/scm');
 var ws;
 
 var Builder = function()
@@ -15,6 +15,13 @@ var Builder = function()
 	this.timeout = 0;
 	this.socketConnected = false;
 	this.ws = null;
+
+	var homeDir = process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE;
+	homeDir += '/.cily';
+
+	helpers.config.logs = homeDir + '/logs/';
+	helpers.config.builds = homeDir + '/builds/';
+
 	this.initSocket();
 };
 
@@ -84,35 +91,43 @@ Builder.prototype.build = function(project, task, build)
 	this.projectName = project.name;
 	this.buildNr = build.build_nr;
 
-	var repoLocation = helpers.config.builds + project.name + '/' + build.build_nr;
+	var repoLocation = helpers.config.builds + project.name + '/';
 
-	clone(project.repo_address, repoLocation, null)
-	.then(function(repo) {
-		return repo.getBranchCommit('master');
-	})
-	.then(function(commit) {
+	try
+	{
+		fs.mkdirSync(repoLocation);
+	}
+	catch(e){};
+
+	var git = new scm.Git(repoLocation, build.build_nr);
+
+	repoLocation +=  build.build_nr;
+
+
+	git.clone(project.repo_address)
+	.then(git.log)
+	.then(function(log) {
+		var log = log[0];
+
 		self.runCommands(repoLocation, task.cmd.split('\n'))
 		.then(function(buildStatus) {
 			var retData = {
 				status: buildStatus,
 				end_time: Moment.tz("Europe/Tallinn").format("YYYY-MM-DD HH:MM:ss"),
-				hash: commit.sha(),
-				msg: commit.message(),
-				author: commit.author(),
-				committer: commit.committer()
+				hash: log.hash,
+				msg: log.message,
+				author: log.author,
+				committer: log.author
 			};
 			ws.send(helpers.socketData('buildComplete', retData));
 		});
-	})
-	.catch(function(err) {
-		console.log(err);
-		ws.send(helpers.socketData('vcsError', null));
 	});
 };
 
 Builder.prototype.runCommands = function(path, commands)
 {
 	var self = this;
+
 	return new Promise_(function(resolve) {
 		var done = commands.length - 1;
 		commands.forEach(function(cmd, i) {
@@ -144,7 +159,7 @@ Builder.prototype.saveLog = function(msg)
 	}
 	catch(e)
 	{
-		console.log(e);
+		// console.log(e);
 	}
 
 	fs.appendFile(helpers.config.logs + this.projectName + '/' + this.buildNr + '.log', msg, function (err) {
@@ -153,3 +168,7 @@ Builder.prototype.saveLog = function(msg)
 };
 
 new Builder();
+
+
+
+
