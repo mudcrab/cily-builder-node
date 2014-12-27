@@ -1,7 +1,5 @@
 var WebSocket = require('ws');
 var helpers = require('./helpers');
-var db = require('./db.js');
-var appRoot = require('app-root-path');
 var Promise_ = require('bluebird');
 var Moment = require('moment-timezone');
 var exec = require('child_process').exec;
@@ -101,27 +99,28 @@ Builder.prototype.build = function(project, task, build)
 
 	var git = new scm.Git(repoLocation, build.build_nr);
 
-	repoLocation +=  build.build_nr;
-
+	repoLocation += build.build_nr;
 
 	git.clone(project.repo_address)
-	.then(git.log)
-	.then(function(log) {
-		var log = log[0];
+	.then(function() {
+		git.log()
+		.then(function(log) {
+			var log = log[0];
 
-		self.runCommands(repoLocation, task.cmd.split('\n'))
-		.then(function(buildStatus) {
-			var retData = {
-				status: buildStatus,
-				end_time: Moment.tz("Europe/Tallinn").format("YYYY-MM-DD HH:MM:ss"),
-				hash: log.hash,
-				msg: log.message,
-				author: log.author,
-				committer: log.author
-			};
-			ws.send(helpers.socketData('buildComplete', retData));
+			self.runCommands(repoLocation, task.cmd.split('\n'))
+			.then(function(buildStatus) {
+				var retData = {
+					status: buildStatus,
+					end_time: Moment.tz("Europe/Tallinn").format("YYYY-MM-DD HH:MM:ss"),
+					hash: log.hash,
+					msg: log.message,
+					author: log.author,
+					committer: log.author
+				};
+				ws.send(helpers.socketData('buildComplete', retData));
+			});
 		});
-	});
+	})
 };
 
 Builder.prototype.runCommands = function(path, commands)
