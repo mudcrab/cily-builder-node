@@ -5,6 +5,7 @@ var Moment = require('moment-timezone');
 var exec = require('child_process').exec;
 var fs = require('fs');
 var scm = require('./lib/scm');
+var configError = false;
 var ws;
 
 function initConfig()
@@ -89,6 +90,11 @@ Builder.prototype.initSocket = function()
 				ws.send(helper.socketData('status', self.status));
 			break;
 
+			case 'tokenError':
+				console.log('\033[31m## Wrong access token ## \033[0m');
+				configError = true;
+			break;
+
 			default:
 				console.log('Unknown action: %s', message.type);
 			break;
@@ -111,7 +117,7 @@ Builder.prototype.retryConnection = function()
 	var self = this;
 
 	this.timeout = setInterval(function() {
-		if(!self.socketConnected)
+		if(!self.socketConnected && !configError)
 		{
 			self.initSocket();
 			console.log('Retrying...');
