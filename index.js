@@ -1,11 +1,53 @@
 var WebSocket = require('ws');
-var helpers = require('./helpers');
+var helper = require('./helpers');
 var Promise_ = require('bluebird');
 var Moment = require('moment-timezone');
 var exec = require('child_process').exec;
 var fs = require('fs');
 var scm = require('./lib/scm');
 var ws;
+
+function initConfig()
+{
+	var homeDir = process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE;
+	homeDir += '/.cily';
+	homeDir = helper.args.home || homeDir;
+
+	var config = 
+	[
+		'	serverAddress: "' + (helper.args.server || 'localhost') + '"',
+		'port: ' + (helper.args.port || 1337),
+		'token: "' + (helper.args.token || '123456') + '"',
+		'logs: "' + homeDir + '/logs/"',
+		'builds: "' + homeDir + '/builds/"'
+	];
+
+	try
+	{
+		console.log('\nmodule.exports = {\n' + config.join(',\n	') + '\n};');
+		console.log('\nWriting config file to: %s/builder.js', homeDir);
+
+		fs.writeFileSync(homeDir + '/builder.js', 'module.exports = {\n' + config.join(',\n	') + '\n};', {
+			encoding: 'utf8'
+		});
+
+		console.log('Done');
+	}
+	catch(e)
+	{
+		console.log('Error writing config file.');
+	}
+	process.exit(0);
+};
+
+if(helper.args.init)
+	initConfig();
+
+if(helper.args.help)
+{
+	console.log(helper.cliUsage);
+	process.exit(0);
+}
 
 var Builder = function()
 {
@@ -17,8 +59,8 @@ var Builder = function()
 	var homeDir = process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE;
 	homeDir += '/.cily';
 
-	helpers.config.logs = homeDir + '/logs/';
-	helpers.config.builds = homeDir + '/builds/';
+	helper.config.logs = homeDir + '/logs/';
+	helper.config.builds = homeDir + '/builds/';
 
 	this.initSocket();
 };
@@ -29,7 +71,7 @@ Builder.prototype.initSocket = function()
 	ws = new WebSocket('ws://localhost:1337');
 
 	ws.on('open', function() {
-		ws.send(helpers.socketData('addBuilder', { token: helpers.config.token } ));
+		ws.send(helper.socketData('addBuilder', { token: helper.config.token } ));
 		self.socketConnected = true;
 		console.log('Connected to server');
 	});
@@ -44,7 +86,7 @@ Builder.prototype.initSocket = function()
 			break;
 
 			case 'getStatus':
-				ws.send(helpers.socketData('status', self.status));
+				ws.send(helper.socketData('status', self.status));
 			break;
 
 			default:
@@ -89,7 +131,7 @@ Builder.prototype.build = function(project, task, build)
 	this.projectName = project.name;
 	this.buildNr = build.build_nr;
 
-	var repoLocation = helpers.config.builds + project.name + '/';
+	var repoLocation = helper.config.builds + project.name + '/';
 
 	try
 	{
@@ -117,7 +159,7 @@ Builder.prototype.build = function(project, task, build)
 					author: log.author,
 					committer: log.author
 				};
-				ws.send(helpers.socketData('buildComplete', retData));
+				ws.send(helper.socketData('buildComplete', retData));
 			});
 		});
 	})
@@ -150,7 +192,7 @@ Builder.prototype.runCommands = function(path, commands)
 Builder.prototype.saveLog = function(msg)
 {
 	var self = this;
-	var logsLocation = helpers.config.logs + this.projectName;
+	var logsLocation = helper.config.logs + this.projectName;
 
 	try
 	{
@@ -161,7 +203,7 @@ Builder.prototype.saveLog = function(msg)
 		// console.log(e);
 	}
 
-	fs.appendFile(helpers.config.logs + this.projectName + '/' + this.buildNr + '.log', msg, function (err) {
+	fs.appendFile(helper.config.logs + this.projectName + '/' + this.buildNr + '.log', msg, function (err) {
 		// log error
 	});
 };
